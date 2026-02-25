@@ -1,0 +1,241 @@
+/* =============================================
+   CASE PAGE — styles
+   ============================================= */
+
+/* ── CASE HERO ── */
+.case-hero {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr;
+  overflow: hidden;
+  padding-top: var(--nav-h);
+  background: var(--black);
+}
+
+.case-hero__halftone {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(242,242,242,0.13) 1px, transparent 1px);
+  background-size: 16px 16px;
+  mask-image: linear-gradient(to right, black 0%, transparent 70%);
+  -webkit-mask-image: linear-gradient(to right, black 0%, transparent 70%);
+}
+
+.case-hero__content {
+  position: relative;
+  z-index: 2;
+  padding: 80px 40px 80px 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.case-hero__num {
+  font-family: var(--font-display);
+  font-size: 120px;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.25;
+  display: block;
+  margin-bottom: -20px;
+}
+
+.case-hero__title {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 6vw, 96px);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  color: var(--white);
+  margin-bottom: 48px;
+}
+
+.case-hero__meta {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+}
+
+.meta__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  opacity: 0.7;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.meta__val {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--gray-10);
+  letter-spacing: 0.05em;
+}
+
+.case-hero__img {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.case-hero__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(20%);
+}
+
+/* ── NAV BACK ── */
+.nav__back {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: var(--gray-20);
+  transition: color 0.2s;
+}
+.nav__back:hover { color: var(--white); }
+
+/* ── CASE BODY ── */
+.case-body {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 80px 40px;
+}
+
+/* ── CASE SECTION ── */
+.case-section {
+  margin-bottom: 80px;
+}
+
+.case-section__label {
+  font-family: var(--font-body);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--gray-40);
+  margin-bottom: 32px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--gray-80);
+}
+
+/* ── INTRO ── */
+.case-intro__text h2 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  letter-spacing: 0.03em;
+  color: var(--white);
+  margin-bottom: 24px;
+}
+
+.case-intro__text p {
+  font-size: 18px;
+  line-height: 1.75;
+  color: var(--gray-10);
+  max-width: 680px;
+}
+
+/* ── CASE GRID ── */
+.case-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.case-grid__item {
+  overflow: hidden;
+  background: var(--gray-80);
+  position: relative;
+}
+
+.case-grid__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.6s ease;
+}
+
+.case-grid__item:hover img {
+  transform: scale(1.03);
+}
+
+.case-grid__item--full {
+  grid-column: 1 / -1;
+}
+
+/* ── CASE NAV ── */
+.case-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 60px 0 0;
+  border-top: 1px solid var(--gray-80);
+  margin-top: 80px;
+}
+
+.case-nav__prev,
+.case-nav__next {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.case-nav__next {
+  text-align: right;
+}
+
+.case-nav__prev span,
+.case-nav__next span {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  color: var(--gray-40);
+}
+
+.case-nav__prev strong,
+.case-nav__next strong {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3vw, 40px);
+  letter-spacing: 0.05em;
+  color: var(--gray-20);
+  transition: color 0.2s;
+}
+
+.case-nav__prev:hover strong,
+.case-nav__next:hover strong {
+  color: var(--accent);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .case-hero {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+
+  .case-hero__content {
+    padding: 60px 24px 40px;
+  }
+
+  .case-hero__img {
+    height: 50vw;
+    min-height: 300px;
+  }
+
+  .case-body {
+    padding: 60px 24px;
+  }
+
+  .case-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .case-grid__item--full {
+    grid-column: 1;
+  }
+}
