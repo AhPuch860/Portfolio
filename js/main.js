@@ -65,33 +65,63 @@ sections.forEach(s => navObserver.observe(s));
   const R_RADIUS = 80;
   const R_FORCE  = 5;
 
-  const ticks = [];
-
-  function build(section, halftoneEl, spacing, dotR, dotA, vignette) {
+  // Cada canvas tem seu próprio estado de visibilidade
+  function build(section, halftoneEl, spacing, dotR, dotA, vignette, clipOrFn, excludeSelectors = []) {
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;filter:blur(2.5px);';
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
     halftoneEl.parentNode.insertBefore(canvas, halftoneEl);
-    halftoneEl.remove(); // remove completamente para não sobrepor
+    halftoneEl.remove();
 
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgb(242,242,242)';
 
     let dots = [];
     let mx = -9999, my = -9999;
-    const dpr = window.devicePixelRatio || 1;
+    let visible = false;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); // limita DPR a 2x
 
     function resize() {
       const W_css = section.offsetWidth;
       const H_css = section.offsetHeight;
+
+      const clip = typeof clipOrFn === 'function'
+        ? clipOrFn(W_css, H_css, section)
+        : clipOrFn;
+      canvas.style.clipPath = clip || '';
+
       canvas.width  = W_css * dpr;
       canvas.height = H_css * dpr;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       dots = [];
       const W = W_css, H = H_css;
       const cols = Math.ceil(W / spacing) + 1;
       const rows = Math.ceil(H / spacing) + 1;
       const cx = W / 2, cy = H / 2;
       const rx = W * 0.4, ry = H * 0.4;
+
+      // Calcula zonas de exclusão a partir dos seletores fornecidos
+      const pad = spacing * 0.6;
+      const sRect = section.getBoundingClientRect();
+      const exclusions = excludeSelectors
+        .map(sel => section.querySelector(sel))
+        .filter(Boolean)
+        .map(el => {
+          // Usa Range para medir o texto real, não a caixa do bloco inteiro
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const rects = [...range.getClientRects()];
+          if (!rects.length) return null;
+          const left   = Math.min(...rects.map(r => r.left));
+          const top    = Math.min(...rects.map(r => r.top));
+          const right  = Math.max(...rects.map(r => r.right));
+          const bottom = Math.max(...rects.map(r => r.bottom));
+          return {
+            x0: left   - sRect.left - pad,
+            y0: top    - sRect.top  - pad,
+            x1: right  - sRect.left + pad,
+            y1: bottom - sRect.top  + pad,
+          };
+        })
+        .filter(Boolean);
 
       for (let r = 0; r <= rows; r++) {
         for (let c = 0; c <= cols; c++) {
@@ -102,15 +132,27 @@ sections.forEach(s => navObserver.observe(s));
             const d  = Math.sqrt(nx * nx + ny * ny);
             a = dotA * Math.max(0, Math.min(1, 1 - (d - 0.4) / 0.6));
           }
-          if (a > 0.004) dots.push({ ox, oy, x: ox, y: oy, vx: 0, vy: 0, a });
+          const blocked = exclusions.some(z => ox >= z.x0 && ox <= z.x1 && oy >= z.y0 && oy <= z.y1);
+          if (!blocked && a > 0.004) dots.push({ ox, oy, x: ox, y: oy, vx: 0, vy: 0, a });
         }
       }
     }
 
     function tick() {
-      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-      ctx.fillStyle = 'rgb(242,242,242)';
+      if (!visible) return;
+
+      const W = canvas.width  / dpr;
+      const H = canvas.height / dpr;
+      ctx.clearRect(0, 0, W, H);
+
       const RR = R_RADIUS * R_RADIUS;
+
+      // Batch por alpha: agrupa pontos com mesmo alpha para reduzir estado de contexto
+      // (só há poucos valores de alpha distintos, normalmente 1)
+      ctx.fillStyle = 'rgb(242,242,242)';
+      ctx.beginPath();
+      let lastAlpha = -1;
+
       for (const d of dots) {
         const ddx = d.x - mx, ddy = d.y - my;
         const dist2 = ddx * ddx + ddy * ddy;
@@ -126,13 +168,26 @@ sections.forEach(s => navObserver.observe(s));
         d.vy *= DAMPING;
         d.x  += d.vx;
         d.y  += d.vy;
-        ctx.globalAlpha = d.a;
-        ctx.beginPath();
+
+        if (d.a !== lastAlpha) {
+          // Fecha o path anterior e abre novo com novo alpha
+          ctx.fill();
+          ctx.beginPath();
+          ctx.globalAlpha = d.a;
+          lastAlpha = d.a;
+        }
+        ctx.moveTo(d.x + dotR, d.y);
         ctx.arc(d.x, d.y, dotR, 0, Math.PI * 2);
-        ctx.fill();
       }
+      ctx.fill();
       ctx.globalAlpha = 1;
     }
+
+    // Pausa animação quando seção sai da viewport
+    const visObs = new IntersectionObserver((entries) => {
+      visible = entries[0].isIntersecting;
+    }, { threshold: 0 });
+    visObs.observe(section);
 
     section.addEventListener('mousemove', e => {
       const rect = canvas.getBoundingClientRect();
@@ -145,19 +200,38 @@ sections.forEach(s => navObserver.observe(s));
     return tick;
   }
 
+  function HERO_CLIP(W, H, section) {
+    const defaultTop = 60.4;
+    const defaultBot = 55.0;
+    const content = section.querySelector('.hero__content');
+    if (content) {
+      const sLeft   = section.getBoundingClientRect().left;
+      const cRight  = content.getBoundingClientRect().right - sLeft;
+      const pct     = (cRight / W) * 100;
+      const topLeft = Math.max(defaultTop, pct);
+      const botLeft = Math.max(defaultBot, pct);
+      return `polygon(${topLeft.toFixed(1)}% 0%,100% 0%,100% 100%,${botLeft.toFixed(1)}% 100%)`;
+    }
+    return `polygon(${defaultTop}% 0%,100% 0%,100% 100%,${defaultBot}% 100%)`;
+  }
+
   const defs = [
-    ['.hero',    '.hero__halftone',    18, 1.5, 0.38, false],
-    ['.about',   '.about__halftone',   14, 2,   0.42, false],
-    ['.contact', '.contact__halftone', 14, 2,   0.42, false],
+    ['.hero',    '.hero__halftone',    18, 1.5, 0.38, false, '', ['.hero__label', '.hero__sub', '.hero__scroll']],
+    ['.about',   '.about__halftone',   14, 2,   0.12, false, ''],
+    ['.contact', '.contact__halftone', 14, 2,   0.42, false, ''],
   ];
 
-  for (const [sel, hSel, sp, r, a, vig] of defs) {
+  const ticks = [];
+  for (const [sel, hSel, sp, r, a, vig, clip, excl = []] of defs) {
     const sec = document.querySelector(sel);
     const ht  = document.querySelector(hSel);
-    if (sec && ht) ticks.push(build(sec, ht, sp, r, a, vig));
+    if (sec && ht) ticks.push(build(sec, ht, sp, r, a, vig, clip, excl));
   }
 
   if (ticks.length) {
-    (function loop() { ticks.forEach(fn => fn()); requestAnimationFrame(loop); })();
+    (function loop() {
+      ticks.forEach(fn => fn());
+      requestAnimationFrame(loop);
+    })();
   }
 })();
