@@ -102,24 +102,20 @@ sections.forEach(s => navObserver.observe(s));
       const pad = spacing * 0.6;
       const sRect = section.getBoundingClientRect();
       const exclusions = excludeSelectors
-        .map(sel => section.querySelector(sel))
+        .flatMap(sel => [...section.querySelectorAll(sel)])
         .filter(Boolean)
         .map(el => {
-          // Usa Range para medir o texto real, não a caixa do bloco inteiro
+          // X: Range mede o texto real (não afetado por translateY)
           const range = document.createRange();
           range.selectNodeContents(el);
           const rects = [...range.getClientRects()];
           if (!rects.length) return null;
-          const left   = Math.min(...rects.map(r => r.left));
-          const top    = Math.min(...rects.map(r => r.top));
-          const right  = Math.max(...rects.map(r => r.right));
-          const bottom = Math.max(...rects.map(r => r.bottom));
-          return {
-            x0: left   - sRect.left - pad,
-            y0: top    - sRect.top  - pad,
-            x1: right  - sRect.left + pad,
-            y1: bottom - sRect.top  + pad,
-          };
+          const x0 = Math.min(...rects.map(r => r.left))  - sRect.left - pad;
+          const x1 = Math.max(...rects.map(r => r.right)) - sRect.left + pad;
+          // Y: offsetTop traversal ignora transforms CSS (ex: reveal translateY)
+          let oy = 0, cur = el;
+          while (cur && cur !== section) { oy += cur.offsetTop; cur = cur.offsetParent; }
+          return { x0, y0: oy - pad, x1, y1: oy + el.offsetHeight + pad };
         })
         .filter(Boolean);
 
@@ -218,7 +214,7 @@ sections.forEach(s => navObserver.observe(s));
   const defs = [
     ['.hero',    '.hero__halftone',    18, 1.5, 0.38, false, '', ['.hero__label', '.hero__sub', '.hero__scroll']],
     ['.about',   '.about__halftone',   14, 2,   0.12, false, ''],
-    ['.contact', '.contact__halftone', 14, 2,   0.42, false, ''],
+    ['.contact', '.contact__halftone', 14, 2,   0.12, false, '', ['.contact__email', '.contact__social a', '.contact__copy']],
   ];
 
   const ticks = [];
