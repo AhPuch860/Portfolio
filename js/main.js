@@ -71,19 +71,23 @@ sections.forEach(s => navObserver.observe(s));
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;filter:blur(2.5px);';
     halftoneEl.parentNode.insertBefore(canvas, halftoneEl);
-    halftoneEl.style.display = 'none';
+    halftoneEl.remove(); // remove completamente para não sobrepor
 
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'rgb(242,242,242)';
 
     let dots = [];
     let mx = -9999, my = -9999;
+    const dpr = window.devicePixelRatio || 1;
 
     function resize() {
-      canvas.width  = section.offsetWidth;
-      canvas.height = section.offsetHeight;
+      const W_css = section.offsetWidth;
+      const H_css = section.offsetHeight;
+      canvas.width  = W_css * dpr;
+      canvas.height = H_css * dpr;
+      ctx.scale(dpr, dpr);
       dots = [];
-      const W = canvas.width, H = canvas.height;
+      const W = W_css, H = H_css;
       const cols = Math.ceil(W / spacing) + 1;
       const rows = Math.ceil(H / spacing) + 1;
       const cx = W / 2, cy = H / 2;
@@ -104,7 +108,7 @@ sections.forEach(s => navObserver.observe(s));
     }
 
     function tick() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
       ctx.fillStyle = 'rgb(242,242,242)';
       const RR = R_RADIUS * R_RADIUS;
       for (const d of dots) {
