@@ -69,7 +69,7 @@ sections.forEach(s => navObserver.observe(s));
 
   function build(section, halftoneEl, spacing, dotR, dotA, vignette) {
     const canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;';
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;filter:blur(2.5px);';
     halftoneEl.parentNode.insertBefore(canvas, halftoneEl);
     halftoneEl.style.display = 'none';
 
@@ -142,9 +142,9 @@ sections.forEach(s => navObserver.observe(s));
   }
 
   const defs = [
-    ['.hero',    '.hero__halftone',    18, 1.5, 0.38, true ],
-    ['.about',   '.about__halftone',   14, 2,   0.28, false],
-    ['.contact', '.contact__halftone', 14, 2,   0.28, false],
+    ['.hero',    '.hero__halftone',    18, 1.5, 0.38, false],
+    ['.about',   '.about__halftone',   14, 2,   0.42, false],
+    ['.contact', '.contact__halftone', 14, 2,   0.42, false],
   ];
 
   for (const [sel, hSel, sp, r, a, vig] of defs) {
